@@ -1,7 +1,7 @@
 'use strict'
 
 angular.module('slick', [])
-  .directive "slick", ($timeout) ->
+  .directive "slick", ($timeout, $compile) ->
     restrict: "AEC"
     scope:
       initOnload: "@"
@@ -50,12 +50,16 @@ angular.module('slick', [])
       prevArrow:"@"
       nextArrow:"@"
 
-    link: (scope, element, attrs) ->
+    transclude: true
+    link: (scope, element, attrs, controller, $transclude) ->
       destroySlick = () ->
         $timeout(() ->
           slider = $(element)
-          slider.slick('unslick')
-          slider.find('.slick-list').remove()
+          if slide.uslick?
+            slider.unslick()
+          else
+            slider.slick('unslick')
+            slider.find('.slick-list').remove()
           slider
         )
       initializeSlick = () ->
@@ -133,11 +137,19 @@ angular.module('slick', [])
         isInitialized = false
         scope.$watch("data", (newVal, oldVal) ->
           if newVal?
-            if isInitialized
-              destroySlick()
+            $transclude((clone, scope) ->
+              if isInitialized
+                destroySlick()
 
-            initializeSlick()
-            isInitialized = true
+              compiled = $compile(clone)(scope)
+              element.append(compiled)
+              initializeSlick()
+              isInitialized = true            
+            )
         )
       else
-        initializeSlick()
+        $transclude((clone, scope) ->
+          compiled = $compile(clone)(scope)
+          element.append(compiled)
+          initializeSlick()
+        )

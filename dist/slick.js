@@ -1,7 +1,8 @@
 'use strict';
 angular.module('slick', []).directive('slick', [
   '$timeout',
-  function ($timeout) {
+  '$compile',
+  function ($timeout, $compile) {
     return {
       restrict: 'AEC',
       scope: {
@@ -51,14 +52,19 @@ angular.module('slick', []).directive('slick', [
         prevArrow: '@',
         nextArrow: '@'
       },
-      link: function (scope, element, attrs) {
+      transclude: true,
+      link: function (scope, element, attrs, controller, $transclude) {
         var destroySlick, initializeSlick, isInitialized;
         destroySlick = function () {
           return $timeout(function () {
             var slider;
             slider = $(element);
-            slider.slick('unslick');
-            slider.find('.slick-list').remove();
+            if (slide.uslick != null) {
+              slider.unslick();
+            } else {
+              slider.slick('unslick');
+              slider.find('.slick-list').remove();
+            }
             return slider;
           });
         };
@@ -146,15 +152,25 @@ angular.module('slick', []).directive('slick', [
           isInitialized = false;
           return scope.$watch('data', function (newVal, oldVal) {
             if (newVal != null) {
-              if (isInitialized) {
-                destroySlick();
-              }
-              initializeSlick();
-              return isInitialized = true;
+              return $transclude(function (clone, scope) {
+                var compiled;
+                if (isInitialized) {
+                  destroySlick();
+                }
+                compiled = $compile(clone)(scope);
+                element.append(compiled);
+                initializeSlick();
+                return isInitialized = true;
+              });
             }
           });
         } else {
-          return initializeSlick();
+          return $transclude(function (clone, scope) {
+            var compiled;
+            compiled = $compile(clone)(scope);
+            element.append(compiled);
+            return initializeSlick();
+          });
         }
       }
     };
